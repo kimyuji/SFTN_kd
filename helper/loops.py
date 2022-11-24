@@ -215,6 +215,89 @@ def train_distill(epoch, train_loader, module_list, criterion_list, optimizer, o
     return top1.avg, losses.avg
 
 
+def train_sftn(epoch, train_loader, module_list, criterion_list, optimizer, opt):
+    """One epoch distillation"""
+    # set modules as train()
+    for module in module_list:
+        module.train()
+
+    criterion_T_CE = criterion_list[0]
+    criterion_S_KL = criterion_list[1]
+    criterion_S_CE = criterion_list[2]
+
+    model_t = module_list[0]
+    branch1 = module_list[1]
+    branch2 = module_list[2]
+
+    transform1 = module_list[3]
+    transform2 = module_list[4]
+
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
+
+    end = time.time()
+    for idx, data in enumerate(train_loader):
+        input, target, index = data
+        data_time.update(time.time() - end)
+
+        input = input.float()
+        if torch.cuda.is_available():
+            input = input.cuda()
+            target = target.cuda()
+            index = index.cuda()
+
+        # ===================forward=====================
+        preact = False
+        feat_t, logit_t = model_t(input, is_feat=True, preact=preact)
+        feat_t = [f.detach() for f in feat_t]
+
+        transformed_F1  = transform1(feat_t[1])
+        logit_s1 = branch1(transformed_F1)
+
+        transformed_F2  = transform2(feat_t[2])
+        logit_s2 = branch2(transformed_F2)
+
+        loss_t_ce = criterion_T_CE(logit_t, target)
+        loss_s_kl = (criterion_S_KL(logit_s1, logit_t) + criterion_S_KL(logit_s2, logit_t))/2
+        loss_s_ce = (criterion_S_CE(logit_s1, target) + criterion_S_CE(logit_s2, target))/2
+
+        loss = opt.gamma * loss_t_ce + opt.alpha * loss_s_kl + opt.beta * loss_s_ce
+
+        acc1, acc5 = accuracy(logit_t, target, topk=(1, 5))
+        losses.update(loss.item(), input.size(0))
+        top1.update(acc1[0], input.size(0))
+        top5.update(acc5[0], input.size(0))
+
+        # ===================backward=====================
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        # ===================meters=====================
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        # print info
+        if idx % opt.print_freq == 0:
+            print('Epoch: [{0}][{1}/{2}]\t'
+                  'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                  'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                  'Acc@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                  'Acc@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+                epoch, idx, len(train_loader), batch_time=batch_time,
+                data_time=data_time, loss=losses, top1=top1, top5=top5))
+            sys.stdout.flush()
+
+    print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'
+          .format(top1=top1, top5=top5))
+
+    return top1.avg, losses.avg
+
+
 def validate(val_loader, model, criterion, opt):
     """validation"""
     batch_time = AverageMeter()

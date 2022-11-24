@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "train_student_aware_teacher.py",
+            "args": [
+                // "--path_t", "./save/models/resnet32x4_vanilla/ckpt_epoch_240.pth",
+                // "--distill", "hint",
+                // "--model_s", "resnet8x4",
+                // "-r", "0.1",
+                // "-a", "0.9",
+                // "-b", "0",
+                // "--trial", "1"
+
+
+                "--model_t", "resnet32x4",
+                "--model_s", "resnet8x4",
+                "--trial", "1"
+
+
+            ],
+            "console": "integratedTerminal"
+        }
+    ]
+}
+

@@ -86,6 +86,9 @@ def parse_option():
 
     # hint layer
     parser.add_argument('--hint_layer', default=2, type=int, choices=[0, 1, 2, 3, 4])
+    
+    # gpu configuration
+    parser.add_argument('--gpu_idx', default="0", type=str)
 
     opt = parser.parse_args()
 
@@ -126,7 +129,8 @@ def get_teacher_name(model_path):
     """parse teacher name"""
     segments = model_path.split('/')[-2].split('_')
     if segments[0] != 'wrn':
-        return segments[0]
+        # return segments[0]
+        return 'resnet32x4'
     else:
         return segments[0] + '_' + segments[1] + '_' + segments[2]
 
@@ -144,6 +148,8 @@ def main():
     best_acc = 0
 
     opt = parse_option()
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu_idx
 
     # tensorboard logger
     logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)

@@ -233,9 +233,47 @@ def resnet110(**kwargs):
 def resnet8x4(**kwargs):
     return ResNet(8, [32, 64, 128, 256], 'basicblock', **kwargs)
 
+def resnet8x4_branches(**kwargs):
+    return StudentBranch1(8, [32, 64, 128, 256], 'basicblock', **kwargs), StudentBranch2(8, [32, 64, 128, 256], 'basicblock', **kwargs)
+
+
+# TODO
+def resnet8x2(**kwargs):
+    return ResNet(8, [32, 64, 128, 256], 'basicblock', **kwargs)
+
+def resnet8x2_branches(**kwargs):
+    return StudentBranch1(8, [32, 64, 128, 256], 'basicblock', **kwargs), StudentBranch2(8, [32, 64, 128, 256], 'basicblock', **kwargs)
+
 
 def resnet32x4(**kwargs):
     return ResNet(32, [32, 64, 128, 256], 'basicblock', **kwargs)
+
+
+# TODO : make a generalized class that covers all cases
+
+# class ResNet(nn.Module):
+
+#     def __init__(self, depth, num_filters, block_name='BasicBlock', num_classes=10):
+#         super(ResNet, self).__init__()
+
+class StudentBranch1(ResNet):
+    def forward(self, x):
+        x, f2_pre = self.layer2(x)  # 16x16
+        x, f3_pre = self.layer3(x)  # 8x8
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+
+        return x
+
+class StudentBranch2(ResNet):
+    def forward(self, x):
+        x, f3_pre = self.layer3(x)  # 8x8
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+
+        return x
 
 
 if __name__ == '__main__':
