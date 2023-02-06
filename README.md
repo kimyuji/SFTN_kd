@@ -1,1 +1,1 @@
-# Unofficial Implementation of Student Friendly Teacher Network (NeurRIPs 2019)
+# Unofficial Implementation of Student Friendly Teacher Network (NeurIPs 2019)
